@@ -1,61 +1,43 @@
 package expo.modules.splashscreen
 
-import android.content.Context
-
-import expo.modules.core.ExportedModule
-import expo.modules.core.ModuleRegistry
-import expo.modules.core.Promise
-import expo.modules.core.errors.CurrentActivityNotFoundException
-import expo.modules.core.interfaces.ActivityProvider
-import expo.modules.core.interfaces.ExpoMethod
-
-// Below import must be kept unversioned even in versioned code to provide a redirection from
-// versioned code realm to unversioned code realm.
-// Without this import any `SplashScreen.anyMethodName(...)` invocation on JS side ends up
-// in versioned SplashScreen kotlin object that stores no information about the ExperienceActivity.
+import android.os.Build
+import expo.modules.kotlin.Promise
+import expo.modules.kotlin.exception.Exceptions
+import expo.modules.kotlin.modules.Module
+import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.splashscreen.singletons.SplashScreen
 
-class SplashScreenModule(context: Context) : ExportedModule(context) {
-  companion object {
-    private const val NAME = "ExpoSplashScreen"
-    private const val ERROR_TAG = "ERR_SPLASH_SCREEN"
-  }
+class SplashScreenModule : Module() {
+  private val currentActivity
+    get() = appContext.currentActivity ?: throw Exceptions.MissingActivity()
 
-  private lateinit var activityProvider: ActivityProvider
+  override fun definition() = ModuleDefinition {
+    Name("ExpoSplashScreen")
 
-  override fun getName(): String {
-    return NAME
-  }
-
-  override fun onCreate(moduleRegistry: ModuleRegistry) {
-    activityProvider = moduleRegistry.getModule(ActivityProvider::class.java)
-  }
-
-  @ExpoMethod
-  fun preventAutoHideAsync(promise: Promise) {
-    val activity = activityProvider.currentActivity
-    if (activity == null) {
-      promise.reject(CurrentActivityNotFoundException())
-      return
+    AsyncFunction("preventAutoHideAsync") { promise: Promise ->
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        SplashScreen.preventAutoHide(
+          currentActivity,
+          { hasEffect -> promise.resolve(hasEffect) },
+          { m -> promise.reject(SplashScreenException(m)) }
+        )
+      } else {
+        SplashScreen.splashScreenVisible = true
+        promise.resolve(true)
+      }
     }
-    SplashScreen.preventAutoHide(
-      activity,
-      { hasEffect -> promise.resolve(hasEffect) },
-      { m -> promise.reject(ERROR_TAG, m) }
-    )
-  }
 
-  @ExpoMethod
-  fun hideAsync(promise: Promise) {
-    val activity = activityProvider.currentActivity
-    if (activity == null) {
-      promise.reject(CurrentActivityNotFoundException())
-      return
+    AsyncFunction("hideAsync") { promise: Promise ->
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        SplashScreen.hide(
+          currentActivity,
+          { hasEffect -> promise.resolve(hasEffect) },
+          { m -> promise.reject(SplashScreenException(m)) }
+        )
+      } else {
+        SplashScreen.splashScreenVisible = false
+        promise.resolve(null)
+      }
     }
-    SplashScreen.hide(
-      activity,
-      { hasEffect -> promise.resolve(hasEffect) },
-      { m -> promise.reject(ERROR_TAG, m) }
-    )
   }
 }

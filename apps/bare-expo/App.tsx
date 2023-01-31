@@ -1,3 +1,4 @@
+import * as SplashScreen from 'expo-splash-screen';
 import React from 'react';
 
 import MainNavigator, { optionalRequire } from './MainNavigator';
@@ -73,6 +74,14 @@ export default function Main() {
   }, []);
 
   const isLoaded = useLoaded();
+
+  React.useEffect(() => {
+    if (isLoaded) {
+      (async () => {
+        await SplashScreen.hideAsync();
+      })();
+    }
+  }, [isLoaded]);
 
   if (!isLoaded) {
     return null;

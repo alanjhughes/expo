@@ -15,6 +15,7 @@ object SplashScreen : SingletonModule {
   }
 
   private val controllers = WeakHashMap<Activity, SplashScreenViewController>()
+  var splashScreenVisible = true
 
   /**
    * Show SplashScreen by mounting it in ContentView.

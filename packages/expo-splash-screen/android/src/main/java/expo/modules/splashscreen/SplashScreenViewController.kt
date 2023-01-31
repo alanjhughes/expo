@@ -2,9 +2,9 @@ package expo.modules.splashscreen
 
 import android.app.Activity
 import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
-import expo.modules.splashscreen.exceptions.NoContentViewException
 import java.lang.ref.WeakReference
 
 const val SEARCH_FOR_ROOT_VIEW_INTERVAL = 20L
@@ -17,7 +17,7 @@ open class SplashScreenViewController(
   private val weakActivity = WeakReference(activity)
   private val contentView: ViewGroup = activity.findViewById(android.R.id.content)
     ?: throw NoContentViewException()
-  private val handler = Handler()
+  private val handler = Handler(Looper.getMainLooper())
 
   private var autoHideEnabled = true
   private var splashScreenShown = false
